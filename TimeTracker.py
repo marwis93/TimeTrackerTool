@@ -2,6 +2,7 @@ from tkinter import *
 from backend import *
 import getpass
 from func_timeout import func_timeout, FunctionTimedOut
+import threading
 
 TT_VERSION = "Time Tracker 0.4"
 TIMEOUT_IN_S = 43200
@@ -42,12 +43,12 @@ class GUI(Window):
         if not jira_operations.is_story_created('WORK'):
             self.b_stop_work['state'] = 'disabled'
 
-        self.b_start_break = Button(self.master, text="Start break", width=20, command=self.start_break)
+        self.b_start_break = Button(self.master, text="Start break", width=20, command=lambda: self.start_foo_thread(self.start_break))
         self.b_start_break.grid(row=1, column=1, pady=5)
         if jira_operations.is_story_created('BREAK'):
             self.b_start_break['state'] = 'disabled'
 
-        self.b_stop_break = Button(self.master, text="Stop break", width=20, command=self.stop_break)
+        self.b_stop_break = Button(self.master, text="Stop break", width=20, command=lambda: self.start_foo_thread(self.stop_break))
         self.b_stop_break.grid(row=2, column=1, pady=5)
         if not jira_operations.is_story_created('BREAK'):
             self.b_stop_break['state'] = 'disabled'
@@ -116,6 +117,17 @@ class GUI(Window):
             messagebox.showinfo("Error", "Ticket WORK not created.")
         self.update_list()
         self.t_description_of_work.delete("1.0", END)
+
+    def start_foo_thread(self, target_function):
+        global foo_thread
+        foo_thread = threading.Thread(target=target_function)
+        foo_thread.daemon = True
+        foo_thread.start()
+        self.master.after(20, self.check_foo_thread)
+
+    def check_foo_thread(self):
+        if foo_thread.is_alive():
+            self.master.after(20, self.check_foo_thread)
 
     def start_break(self):
         self.b_start_break['state'] = 'disabled'
