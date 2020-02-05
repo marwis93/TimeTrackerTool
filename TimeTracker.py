@@ -4,7 +4,8 @@ import getpass
 from func_timeout import func_timeout, FunctionTimedOut
 import threading
 
-TT_VERSION = "Time Tracker 0.4"
+TT_TITLE = "Time Tracker 0.5"
+TT_TITLE_UPDATING = TT_TITLE + " - updating..."
 TIMEOUT_IN_S = 43200
 TIMEOUT_IN_MS = TIMEOUT_IN_S * 1000
 jira_operations = None
@@ -24,7 +25,7 @@ class Window:
 class GUI(Window):
     def __init__(self, master):
         self.master = master
-        self.master.title(TT_VERSION)
+        self.master.title(TT_TITLE)
         self.master.after(TIMEOUT_IN_MS, self.logout)
 
         self.l_work = Label(self.master, text="WORK", font='BOLD 16')
@@ -43,12 +44,12 @@ class GUI(Window):
         if not jira_operations.is_story_created('WORK'):
             self.b_stop_work['state'] = 'disabled'
 
-        self.b_start_break = Button(self.master, text="Start break", width=20, command=lambda: self.start_foo_thread(self.start_break))
+        self.b_start_break = Button(self.master, text="Start break", width=20, command=lambda: self.start_new_thread(self.start_break))
         self.b_start_break.grid(row=1, column=1, pady=5)
         if jira_operations.is_story_created('BREAK'):
             self.b_start_break['state'] = 'disabled'
 
-        self.b_stop_break = Button(self.master, text="Stop break", width=20, command=lambda: self.start_foo_thread(self.stop_break))
+        self.b_stop_break = Button(self.master, text="Stop break", width=20, command=lambda: self.start_new_thread(self.stop_break))
         self.b_stop_break.grid(row=2, column=1, pady=5)
         if not jira_operations.is_story_created('BREAK'):
             self.b_stop_break['state'] = 'disabled'
@@ -118,33 +119,36 @@ class GUI(Window):
         self.update_list()
         self.t_description_of_work.delete("1.0", END)
 
-    def start_foo_thread(self, target_function):
-        global foo_thread
-        foo_thread = threading.Thread(target=target_function)
-        foo_thread.daemon = True
-        foo_thread.start()
+    def start_new_thread(self, target_function):
+        self.thread = threading.Thread(target=target_function)
+        self.thread.daemon = True
+        self.thread.start()
         self.master.after(20, self.check_foo_thread)
 
     def check_foo_thread(self):
-        if foo_thread.is_alive():
+        if self.thread.is_alive():
             self.master.after(20, self.check_foo_thread)
 
     def start_break(self):
         self.b_start_break['state'] = 'disabled'
         self.b_stop_break['state'] = 'normal'
         self.b_update_description_break['state'] = 'normal'
+        self.master.title(TT_TITLE_UPDATING)
         if not jira_operations.start_break(self.t_description_of_break.get("1.0", END)):
             messagebox.showinfo("Error", "Ticket BREAK already created.")
         self.update_list()
+        self.master.title(TT_TITLE)
 
     def stop_break(self):
         self.b_start_break['state'] = 'normal'
         self.b_stop_break['state'] = 'disabled'
         self.b_update_description_break['state'] = 'disabled'
+        self.master.title(TT_TITLE_UPDATING)
         if not jira_operations.stop_break():
             messagebox.showinfo("Error", "Ticket BREAK not created.")
         self.update_list()
         self.t_description_of_break.delete("1.0", END)
+        self.master.title(TT_TITLE)
 
     def update_list(self):
         self.list_of_stories_today.delete(0, END)

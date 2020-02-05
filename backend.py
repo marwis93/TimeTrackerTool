@@ -7,7 +7,7 @@ PROJECT_KEY = 'BHE'
 
 EXPECTED_HOURS = 7
 EXPECTED_MINUTES = 40
-TT_VERSION = "TT_0_4"
+TT_VERSION = "TT_0_5"
 
 
 def date_convert(s_date):
