@@ -34,12 +34,12 @@ class GUI(Window):
         self.l_break = Label(self.master, text="BREAK", font='BOLD 16')
         self.l_break.grid(row=0, column=1)
 
-        self.b_start_work = Button(self.master, text="Start work", width=20, command=self.start_work)
+        self.b_start_work = Button(self.master, text="Start work", width=20, command=lambda: self.start_new_thread(self.start_work))
         self.b_start_work.grid(row=1, column=0, pady=5)
         if jira_operations.is_story_created('WORK'):
             self.b_start_work['state'] = 'disabled'
 
-        self.b_stop_work = Button(self.master, text="Stop work", width=20, command=self.stop_work)
+        self.b_stop_work = Button(self.master, text="Stop work", width=20, command=lambda: self.start_new_thread(self.stop_work))
         self.b_stop_work.grid(row=2, column=0, pady=5)
         if not jira_operations.is_story_created('WORK'):
             self.b_stop_work['state'] = 'disabled'
@@ -62,7 +62,7 @@ class GUI(Window):
         self.t_description_of_work.insert(END, jira_operations.description_init('WORK'))
 
         self.b_update_description_work = Button(self.master, text="Update description", width=20,
-                                                command=self.update_description_work)
+                                                command=lambda: self.start_new_thread(self.update_description_work))
         self.b_update_description_work.grid(row=5, column=0, pady=5)
         if not jira_operations.is_story_created('WORK'):
             self.b_update_description_work['state'] = 'disabled'
@@ -75,7 +75,7 @@ class GUI(Window):
         self.t_description_of_break.insert(END, jira_operations.description_init('BREAK'))
 
         self.b_update_description_break = Button(self.master, text="Update description", width=20,
-                                                 command=self.update_description_break)
+                                                 command=lambda: self.start_new_thread(self.update_description_break))
         self.b_update_description_break.grid(row=5, column=1, pady=5)
         if not jira_operations.is_story_created('BREAK'):
             self.b_update_description_break['state'] = 'disabled'
@@ -92,7 +92,7 @@ class GUI(Window):
         self.list_current_week = Listbox(self.master, height=4, width=130)
         self.list_current_week.grid(row=10, column=0, rowspan=2, columnspan=2)
 
-        self.b_update_list = Button(self.master, text="Update lists", width=20, command=self.update_list)
+        self.b_update_list = Button(self.master, text="Update lists", width=20, command=lambda: self.start_new_thread(self.update_list))
         self.b_update_list.grid(row=12, column=0, pady=5, columnspan=2)
 
         super().__init__(self.master)
@@ -106,6 +106,7 @@ class GUI(Window):
         self.b_start_work['state'] = 'disabled'
         self.b_stop_work['state'] = 'normal'
         self.b_update_description_work['state'] = 'normal'
+        self.master.title(TT_TITLE_UPDATING)
         if not jira_operations.start_work():
             messagebox.showinfo("Error", "Ticket WORK already created.")
         self.update_list()
@@ -114,6 +115,7 @@ class GUI(Window):
         self.b_start_work['state'] = 'normal'
         self.b_stop_work['state'] = 'disabled'
         self.b_update_description_work['state'] = 'disabled'
+        self.master.title(TT_TITLE_UPDATING)
         if not jira_operations.stop_work():
             messagebox.showinfo("Error", "Ticket WORK not created.")
         self.update_list()
@@ -123,11 +125,11 @@ class GUI(Window):
         self.thread = threading.Thread(target=target_function)
         self.thread.daemon = True
         self.thread.start()
-        self.master.after(20, self.check_foo_thread)
+        self.master.after(20, self.check_thread)
 
-    def check_foo_thread(self):
+    def check_thread(self):
         if self.thread.is_alive():
-            self.master.after(20, self.check_foo_thread)
+            self.master.after(20, self.check_thread)
 
     def start_break(self):
         self.b_start_break['state'] = 'disabled'
@@ -137,7 +139,6 @@ class GUI(Window):
         if not jira_operations.start_break(self.t_description_of_break.get("1.0", END)):
             messagebox.showinfo("Error", "Ticket BREAK already created.")
         self.update_list()
-        self.master.title(TT_TITLE)
 
     def stop_break(self):
         self.b_start_break['state'] = 'normal'
@@ -148,9 +149,9 @@ class GUI(Window):
             messagebox.showinfo("Error", "Ticket BREAK not created.")
         self.update_list()
         self.t_description_of_break.delete("1.0", END)
-        self.master.title(TT_TITLE)
 
     def update_list(self):
+        self.master.title(TT_TITLE_UPDATING)
         self.list_of_stories_today.delete(0, END)
         for row in jira_operations.get_stories_created_today():
             self.list_of_stories_today.insert(END, row)
@@ -158,18 +159,23 @@ class GUI(Window):
         self.list_current_week.delete(0, END)
         for row in jira_operations.get_week_statistics():
             self.list_current_week.insert(END, row)
+        self.master.title(TT_TITLE)
 
     def update_description_work(self):
+        self.master.title(TT_TITLE_UPDATING)
         description = self.t_description_of_work.get("1.0", END)
         if not jira_operations.update_description('WORK', description):
             messagebox.showinfo("Error", "Ticket WORK not created.")
         self.update_list()
+        self.master.title(TT_TITLE)
 
     def update_description_break(self):
+        self.master.title(TT_TITLE_UPDATING)
         description = self.t_description_of_break.get("1.0", END)
         if not jira_operations.update_description('BREAK', description):
             messagebox.showinfo("Error", "Ticket BREAK not created.")
         self.update_list()
+        self.master.title(TT_TITLE)
 
 
 class GUILogin(Window):
